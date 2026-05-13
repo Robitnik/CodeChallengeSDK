@@ -3,7 +3,7 @@ from typing import Any, Dict, Final, List, Optional
 
 from sdk_challenge.api_client import JikanAPIClient
 from sdk_challenge.storage import AnimeInfo, AnimeInfoStorage
-from uuid import uuid4
+from sdk_challenge.string_utils import reduce_string
 
 DEFAULT_RATING: Final[float] = float()
 DEFAULT_YEAR: Final[int] = 0
@@ -29,7 +29,7 @@ class AnimeService:
         if not success:
             return None
         anime = self._to_anime_info(anime_info.get("data", {}))
-        self.storage.save(anime.uuid, anime)
+        self.storage.save(anime.mal_id, anime)
         return anime
 
     def search_and_store(self, query: str) -> List[AnimeInfo]:
@@ -47,7 +47,7 @@ class AnimeService:
         stored: List[AnimeInfo] = []
         for raw_anime in search_results.get("data", []):
             anime = self._to_anime_info(raw_anime)
-            self.storage.save(anime.uuid, anime)
+            self.storage.save(anime.mal_id, anime)
             stored.append(anime)
         return stored
 
@@ -61,12 +61,16 @@ class AnimeService:
             AnimeInfo populated from the raw payload, with safe defaults for
             missing or null fields.
         """
-        uuid = uuid4()
+        if not raw or not raw.get("mal_id"):
+            raise ValueError("Invalid anime data: missing mal_id")
+        mal_id = int(raw.get("mal_id", 0))
+        # for demo purposes, reduce the synopsis length to 10 characters
+        reduced_synopsis = reduce_string(str(raw.get("synopsis") or ""), max_length=10)
         return AnimeInfo(
-            uuid=uuid,
+            mal_id=mal_id,
             title=str(raw.get("title", "")),
             rating=float(raw.get("score") or DEFAULT_RATING),
             year=int(raw.get("year") or DEFAULT_YEAR),
-            synopsis=str(raw.get("synopsis") or ""),
+            synopsis=reduced_synopsis,
             season=str(raw.get("season") or ""),
         )

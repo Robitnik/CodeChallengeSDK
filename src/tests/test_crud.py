@@ -1,20 +1,19 @@
 import logging
 import math
-from uuid import uuid4
 
 from sdk_challenge import storage
-from tests.debug_helpers import debug_print
 
+ONE_PIECE_ID = 21
 INITIAL_RATING = 8.5
-RELEASE_YEAR = 2016
+RELEASE_YEAR = 1980
+UPDATED_YEAR = 1986
 UPDATED_RATING = 9.0
 
 
-def test_crud_operations() -> None:
-    # Create and save an anime info
+def test_create() -> storage.AnimeInfoStorage:
     anime_info = storage.AnimeInfo(
-        uuid=uuid4(),
-        title="My Hero Academia",
+        mal_id=ONE_PIECE_ID,
+        title="One Piece",
         rating=INITIAL_RATING,
         year=RELEASE_YEAR,
         synopsis=(
@@ -23,42 +22,55 @@ def test_crud_operations() -> None:
         ),
         season="Spring",
     )
-
-    # Initialize storage and save the anime info
     anime_storage = storage.AnimeInfoStorage()
+    anime_storage.save(mal_id=anime_info.mal_id, anime_data=anime_info)
+    return anime_storage
 
-    # Save the anime info and verify it is saved correctly
-    anime_storage.save(anime_id=anime_info.uuid, anime_data=anime_info)
-    anime_storage.print_storage(anime_id=anime_info.uuid)
 
-    # Load the anime info and verify it
-    loaded_anime_info = anime_storage.load(anime_id=anime_info.uuid)
-    debug_print(f"Loaded anime info: {loaded_anime_info}")
+def test_read(anime_storage: storage.AnimeInfoStorage) -> None:
+    loaded_anime = anime_storage.load(mal_id=ONE_PIECE_ID)
+    assert loaded_anime is not None
+    assert loaded_anime.mal_id == ONE_PIECE_ID
+    assert loaded_anime.title == "One Piece"
+    assert math.isclose(loaded_anime.rating, INITIAL_RATING)
+    assert loaded_anime.year == RELEASE_YEAR
+    logging.info(f"Read anime: {loaded_anime}")
 
-    # Verify that the loaded anime info matches the saved one
-    assert loaded_anime_info == anime_info, "Loaded anime info does not match the saved one."
 
-    # Update the anime info
-    loaded_anime_info.rating = UPDATED_RATING
-    anime_storage.save(anime_id=anime_info.uuid, anime_data=loaded_anime_info)
+def test_update(anime_storage: storage.AnimeInfoStorage) -> None:
+    loaded_anime = anime_storage.load(mal_id=ONE_PIECE_ID)
+    assert loaded_anime is not None
+    updated_anime = storage.AnimeInfo(
+        mal_id=loaded_anime.mal_id,
+        title=loaded_anime.title,
+        rating=UPDATED_RATING,
+        year=UPDATED_YEAR,
+        synopsis=loaded_anime.synopsis,
+        season=loaded_anime.season,
+    )
+    anime_storage.update(mal_id=ONE_PIECE_ID, anime_data=updated_anime)
+    reloaded_anime = anime_storage.load(mal_id=ONE_PIECE_ID)
+    assert reloaded_anime is not None
+    assert math.isclose(reloaded_anime.rating, UPDATED_RATING)
+    assert reloaded_anime.year == UPDATED_YEAR
+    logging.info(f"Updated anime: {reloaded_anime}")
 
-    # Load the updated anime info and verify the update
-    updated_anime_info = anime_storage.load(anime_id=anime_info.uuid)
-    debug_print(f"Updated anime info: {updated_anime_info}")
 
-    # Verify that the rating was updated correctly
-    assert updated_anime_info is not None, "Updated anime info should not be None."
-    assert math.isclose(updated_anime_info.rating, UPDATED_RATING), "Anime rating was not updated correctly."
+def test_delete(anime_storage: storage.AnimeInfoStorage) -> None:
+    anime_storage.delete(mal_id=ONE_PIECE_ID)
+    deleted_anime = anime_storage.load(mal_id=ONE_PIECE_ID)
+    assert deleted_anime is None
+    logging.info(f"Anime with ID {ONE_PIECE_ID} successfully deleted.")
 
-    # Delete the anime info
-    anime_storage.delete(anime_id=anime_info.uuid)
 
-    # Try to load the deleted anime info and verify it returns None
-    deleted_anime_info = anime_storage.load(anime_id=anime_info.uuid)
-
-    # Verify that the deleted anime info returns None
-    assert deleted_anime_info is None, "Deleted anime info should return None when loaded."
-    debug_print(f"Deleted anime info: {deleted_anime_info}")
+def test_crud_operations() -> None:
+    logging.info(f"Initial items in storage: {len(storage.AnimeInfoStorage().get_all().keys())}")
+    anime_storage = test_create()
+    test_read(anime_storage)
+    test_update(anime_storage)
+    logging.info(f"Items in storage after update: {len(anime_storage.get_all().keys())}")
+    test_delete(anime_storage)
+    logging.info(f"Final items in storage: {anime_storage.get_all()}")
 
 
 if __name__ == "__main__":

@@ -62,3 +62,37 @@ python3 -m flake8 src/
 ```
 
 Both should report zero errors.
+
+## Changelog
+
+### v1.1 — iteration on code-review feedback
+
+**Storage keying (CRUD fully reachable)**
+
+The original `_to_anime_info` helper in `service.py` minted a fresh `uuid4()` on every call,
+meaning each fetch of the same anime produced a separate record and `update`/`delete` were
+unreachable through the service. The key is now the natural primary key — `mal_id` (the
+MyAnimeList integer ID). `AnimeInfoStorage` is typed `Dict[int, AnimeInfo]` accordingly, and
+`AnimeInfo` no longer carries a `uuid` field.
+
+**CRUD tests rewritten**
+
+`test_crud.py` was rewritten to exercise the full create → read → update → delete cycle against
+real `AnimeInfo` / `AnimeInfoStorage` objects. Magic numbers were extracted to named constants
+(`ONE_PIECE_ID`, `INITIAL_RATING`, etc.) so the intent of each assertion is self-documenting.
+Type annotations were added to all helper functions (`test_read`, `test_update`, `test_delete`)
+to satisfy the strict mypy config.
+
+**Linter now actually passes**
+
+`flake8` and `mypy` both report zero errors across all 11 source files.
+
+```bash
+~/dev/git/CodeChallengeSDK main*
+❯ python3 -m flake8 src/ 2>&1 && echo "flake8: OK" && python3 -m mypy src/ 2>&1
+flake8: OK
+Success: no issues found in 11 source files
+
+```
+
+Both should report zero errors.
