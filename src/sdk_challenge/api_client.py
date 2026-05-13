@@ -1,6 +1,6 @@
 """Jikan API client for anime data."""
 from types import MappingProxyType
-from typing import Any, Dict, Mapping, Tuple
+from typing import Any, Dict, Mapping
 
 import requests
 
@@ -30,29 +30,26 @@ class JikanAPIClient:
         self.base_url = base_url
         self.timeout = timeout
 
-    def get_anime_info(self, anime_id: int) -> Tuple[bool, Dict[str, Any]]:
+    def get_anime_info(self, anime_id: int) -> Dict[str, Any]:
         """
         Get information about a specific anime by its ID.
         Args:
             anime_id (int): The unique identifier for the anime.
 
         Returns:
-            Tuple[bool, dict]: A tuple containing a boolean indicating success
-            and a dictionary with the anime information.
+            dict: A dictionary with the anime information.
         """
         response = requests.get(f"{self.base_url}/anime/{anime_id}", headers=BASE_HEADERS, timeout=self.timeout)
-        if response.status_code == requests.codes.ok:
-            return True, response.json()
-        return False, response.json()
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.json()
 
-    def search_anime(self, query: str) -> Tuple[bool, Dict[str, Any]]:
+    def search_anime(self, query: str) -> Dict[str, Any]:
         """
         Search for anime based on a query string.
         Args:
             query (str): The search query string.
         Returns:
-            Tuple[bool, dict]: A tuple containing a boolean indicating success
-            and a dictionary with the search results.
+            dict: A dictionary with the search results.
         """
         response = requests.get(
             f"{self.base_url}/anime",
@@ -60,18 +57,15 @@ class JikanAPIClient:
             headers=BASE_HEADERS,
             timeout=self.timeout,
         )
-        if response.status_code == requests.codes.ok:
-            return True, response.json()
-        return False, response.json()
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.json()
 
-    def get_top_anime(self) -> Tuple[bool, Dict[str, Any]]:
+    def get_top_anime(self) -> Dict[str, Any]:
         """
         Get a list of top anime.
         Returns:
-            Tuple[bool, dict]: A tuple containing a boolean indicating success
-            and a dictionary with the top anime information.
+            dict: A dictionary with the top anime information.
         """
         response = requests.get(f"{self.base_url}/top/anime", headers=BASE_HEADERS, timeout=self.timeout)
-        if response.status_code == requests.codes.ok:
-            return True, response.json()
-        return False, response.json()
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.json()

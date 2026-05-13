@@ -1,5 +1,5 @@
 """Service layer that fetches anime data and persists it to storage."""
-from typing import Any, Dict, Final, List, Optional
+from typing import Any, Dict, Final, List
 
 from sdk_challenge.api_client import JikanAPIClient
 from sdk_challenge.storage import AnimeInfo, AnimeInfoStorage
@@ -16,18 +16,16 @@ class AnimeService:
         self.client = client
         self.storage = storage
 
-    def fetch_and_store(self, anime_id: int) -> Optional[AnimeInfo]:
+    def fetch_and_store(self, anime_id: int) -> AnimeInfo:
         """Fetch anime by ID from the API and save it to storage.
 
         Args:
             anime_id (int): The Jikan/MyAnimeList anime ID.
 
         Returns:
-            The persisted AnimeInfo on success, or None if the request fails.
+            The persisted AnimeInfo. Raises requests.HTTPError on API failure.
         """
-        success, anime_info = self.client.get_anime_info(anime_id)
-        if not success:
-            return None
+        anime_info = self.client.get_anime_info(anime_id)
         anime = self._to_anime_info(anime_info.get("data", {}))
         self.storage.save(anime.mal_id, anime)
         return anime
@@ -41,9 +39,7 @@ class AnimeService:
         Returns:
             A list of AnimeInfo objects that were stored.
         """
-        success, search_results = self.client.search_anime(query)
-        if not success:
-            return []
+        search_results = self.client.search_anime(query)
         stored: List[AnimeInfo] = []
         for raw_anime in search_results.get("data", []):
             anime = self._to_anime_info(raw_anime)
